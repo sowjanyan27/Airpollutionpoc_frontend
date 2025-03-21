@@ -196,5 +196,25 @@ input[type="radio"] {
     border-radius: 50%;
     background-color: #fff; /* Inner circle color (white) */
   }
-  
+  .pie-chart-container {
+    display: flex;
+    justify-content: space-between;
+    gap: 20px; /* Adds space between the charts */
+    flex-wrap: wrap; /* Ensure responsiveness */
+}
+
+.pie-chart-item {
+    flex: 1; /* Makes each chart take equal space */
+    min-width: 250px; /* Ensures pie charts do not get too small */
+    max-width: 400px; /* Ensures pie charts don't exceed a max width */
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+.pie-chart-container h3 {
+    width: 100%;
+    text-align: center;
+}
+
     

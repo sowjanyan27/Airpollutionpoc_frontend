@@ -4,7 +4,7 @@ import './styles.css';
 
 function BasicPie() {
     //basic sample json data for the  states and cities and regions
-    const data = {
+    const Jsondata = {
         Telangana: {
             Hyderabad: ["SR Nagar", "Ameerpet", "Rajeev Nagar", "Hafeezpet"],
             MahaboobNagar: ["Mahaboobnagar", "Addakal", "Balanagar"]
@@ -47,6 +47,18 @@ function BasicPie() {
     // get data when click on search button
    
     const handleSearch = async () => {
+        if(selectedState==''){
+            alert("please select state")
+            return;
+        }
+        if(selectedCity==''){
+            alert("please select city")
+            return;
+        }
+        if(selectedRegion==''){
+            alert("please select region")
+            return;
+        }
         setShowTable(true);
         setLoading(true);
 
@@ -59,7 +71,7 @@ function BasicPie() {
         });
 
         try {
-            const response = await fetch(`http://127.0.0.1:8000/get_pollutiondata/?${queryParams.toString()}`, {
+            const response = await fetch(` http://183.82.98.147:11015/get_pollutiondata/?${queryParams.toString()}`, {
                 method: 'GET', 
             });
 
@@ -77,45 +89,58 @@ function BasicPie() {
         setLoading(false);
     };
 
-    const states = ['All States', ...Object.keys(data)];
+    const states = ['All States', ...Object.keys(Jsondata)];
 
     let cities = [];
     let regions = [];
 
     if (selectedState === 'All States') {
-        cities = ['All Cities', ...Object.values(data).flatMap(stateCities => Object.keys(stateCities))];
+        cities = ['All Cities', ...Object.values(Jsondata).flatMap(stateCities => Object.keys(stateCities))];
 
         if (selectedCity === 'All Cities') {
-            regions = ['All Regions', ...Object.values(data).flatMap(stateCities => Object.values(stateCities)).flat()];
+            regions = ['All Regions', ...Object.values(Jsondata).flatMap(stateCities => Object.values(stateCities)).flat()];
         } else if (selectedCity) {
-            regions = Object.values(data).flatMap(stateCities => Object.entries(stateCities)
+            regions = Object.values(Jsondata).flatMap(stateCities => Object.entries(stateCities)
                 .filter(([city, _]) => city === selectedCity)
                 .map(([_, cityRegions]) => cityRegions)
             ).flat();
         }
     } else if (selectedState) {
-        cities = Object.keys(data[selectedState]);
-        regions = selectedCity ? data[selectedState][selectedCity] : [];
+        cities = Object.keys(Jsondata[selectedState]);
+        regions = selectedCity ? Jsondata[selectedState][selectedCity] : [];
     }
-//piechart data from the api response
-    const pieChartData = apiResponse && Array.isArray(apiResponse)
-        ? apiResponse.reduce((acc, apidata) => {
+//piechart data from the api response for all regions
+const pieChartData = apiResponse && Array.isArray(apiResponse)
+    ? apiResponse.reduce((acc, apidata) => {
+        // Check if aggr_param is "Region"
+        if (apidata.aggr_param === "Region") {
             const existingRegion = acc.find((item) => item.id === apidata.aggr_value);
+
             if (existingRegion) {
-                existingRegion.value += apidata.avg_pollutants_co2; // Sum of pollutants
-                existingRegion.label = `${existingRegion.id}: ${existingRegion.value.toFixed(2)}`;
+                existingRegion.sum += apidata.avg_pollutants_co2;
+                existingRegion.count += 1;
+                existingRegion.value = existingRegion.sum / existingRegion.count;
+                existingRegion.label = `${existingRegion.id}`;
             } else {
+                // Initialize the region sum and count
                 acc.push({
                     id: apidata.aggr_value || 'Unknown Region',
-                    value: apidata.avg_pollutants_co2,
+                    sum: apidata.avg_pollutants_co2,
+                    count: 1,
+                    value: apidata.avg_pollutants_co2, // Start with the first value
                     label: `${apidata.aggr_value}: ${apidata.avg_pollutants_co2.toFixed(2)}`,
+                    param: apidata.aggr_param
                 });
             }
-            return acc;
-        }, [])
-        : [];
+        }
+        return acc;
+    }, [])
+    : [];
 
-    console.log('Aggregated pieChartData:', JSON.stringify(pieChartData, null, 2));
+
+
+
+    // console.log('Aggregated pieChartData:', JSON.stringify(pieChartData, null, 2));
 
     // PieChart expects data in a series format, so we wrap pieChartData in series array
     const pieChartSeries = [
@@ -123,6 +148,84 @@ function BasicPie() {
             data: pieChartData, // The data inside the series array
         }
     ];
+
+
+    const pieChartDataTS = apiResponse && Array.isArray(apiResponse)
+    ? apiResponse
+        .filter(apidata => apidata.state === 'Telangana' && apidata.aggr_param === 'Region') // Filter for Telangana and Region
+        .reduce((acc, apidata) => {
+            // Find an existing entry for the region
+            const existingRegion = acc.find((item) => item.id === apidata.aggr_value);
+
+            if (existingRegion) {
+                // Update the region's aggregated values
+                existingRegion.sum += apidata.avg_pollutants_co2;
+                existingRegion.count += 1;
+                existingRegion.value = existingRegion.sum / existingRegion.count;
+                existingRegion.label = `${existingRegion.id}`;
+            } else {
+                // Initialize a new region entry
+                acc.push({
+                    id: apidata.aggr_value || 'Unknown Region',
+                    sum: apidata.avg_pollutants_co2,
+                    count: 1,
+                    value: apidata.avg_pollutants_co2, // Start with the first value
+                    label: `${apidata.aggr_value}: ${apidata.avg_pollutants_co2.toFixed(2)}`,
+                    param: apidata.aggr_param
+                });
+            }
+            return acc;
+        }, [])
+    : [];
+
+  
+  const pieChartSeriesTS = [
+    {
+      data: pieChartDataTS, // The aggregated data for Telangana
+    }
+  ];
+  
+const pieChartDataAP = apiResponse && Array.isArray(apiResponse)
+    ? apiResponse
+        .filter(apidata => apidata.state === 'AndhraPradesh' && apidata.aggr_param === 'Region') // Filter for Andhra Pradesh and Region
+        .reduce((acc, apidata) => {
+            // Find an existing entry for the region
+            const existingRegion = acc.find((item) => item.id === apidata.aggr_value);
+
+            if (existingRegion) {
+                // Update the region's aggregated values
+                existingRegion.sum += apidata.avg_pollutants_co2;
+                existingRegion.count += 1;
+                existingRegion.value = existingRegion.sum / existingRegion.count;
+                existingRegion.label = `${existingRegion.id}`;
+            } else {
+                // Initialize a new region entry
+                acc.push({
+                    id: apidata.aggr_value || 'Unknown Region',
+                    sum: apidata.avg_pollutants_co2,
+                    count: 1,
+                    value: apidata.avg_pollutants_co2, // Start with the first value
+                    label: `${apidata.aggr_value}: ${apidata.avg_pollutants_co2.toFixed(2)}`,
+                    param: apidata.aggr_param
+                });
+            }
+            return acc;
+        }, [])
+    : [];
+
+  
+  const pieChartSeriesAP = [
+    {
+      data: pieChartDataAP, 
+    }
+  ];
+  
+  console.log('Aggregated pieChartData Telangana:', JSON.stringify(pieChartDataTS, null, 2));
+  console.log('Aggregated pieChartData Andhra Pradesh:', JSON.stringify(pieChartDataAP, null, 2));
+  
+
+  
+
 
     return (
         <div className="employee-container">
@@ -210,13 +313,48 @@ function BasicPie() {
             </div>
 
             {showTable && apiResponse.length > 0 && (
+    <div className="pie-chart-container">
+        <div className="pie-chart-item">
+            <h3>Pollutants by Region</h3>
+            <PieChart
+                series={pieChartSeries} 
+                width={400}
+                height={400}
+                label={({ dataEntry }) => `${dataEntry.label}: ${dataEntry.value.toFixed(2)}`}
+            />
+        </div>
+
+        <div className="pie-chart-item">
+            <h3>Pollutants in Andhra Pradesh</h3>
+            <PieChart
+                series={pieChartSeriesAP} 
+                width={400}
+                height={400}
+                label={({ dataEntry }) => `${dataEntry.label}: ${dataEntry.value.toFixed(2)}`}
+            />
+        </div>
+
+        <div className="pie-chart-item">
+            <h3>Pollutants in Telangana</h3>
+            <PieChart
+                series={pieChartSeriesTS} 
+                width={400}
+                height={400}
+                label={({ dataEntry }) => `${dataEntry.label}: ${dataEntry.value.toFixed(2)}`}
+            />
+        </div>
+    </div>
+)}
+
+
+            {showTable && apiResponse.length > 0 && (
                 <div className='overflows'>
                     <table style={{ width: "100%" }} className="table employee-table">
                         <thead>
                             <tr>
-                                <th>State</th>
+                                {/* <th>State</th>
                                 <th>City</th>
-                                <th>Region</th>
+                                <th>Region</th> */}
                                 <th>count_co2</th>
                                 <th>avg_co2</th>
                                 <th>sum_co2</th>
@@ -229,9 +367,9 @@ function BasicPie() {
                         <tbody>
                             {apiResponse.map((apidata, index) => (
                                 <tr key={index}>
-                                    <td>{selectedState}</td>
+                                    {/* <td>{selectedState}</td>
                                     <td>{selectedCity}</td>
-                                    <td>{selectedRegion}</td>
+                                    <td>{selectedRegion}</td> */}
                                     <td>{apidata.count_pollutants_co2}</td>
                                     <td>{apidata.avg_pollutants_co2.toFixed(2)}</td>
                                     <td>{apidata.sum_pollutants_co2}</td>
@@ -247,17 +385,7 @@ function BasicPie() {
             )}
 
             {/* Render PieChart */}
-            {showTable && apiResponse.length > 0 && (
-                <div className="pie-chart-container">
-                    <h3>Pollutants by Region</h3>
-                    <PieChart
-                        series={pieChartSeries} 
-                        width={400}
-                        height={400}
-                        data={({ dataEntry }) => `${dataEntry.label}: ${dataEntry.value.toFixed(2)}`}
-                    />
-                </div>
-            )}
+           
         </div>
     );
 }
