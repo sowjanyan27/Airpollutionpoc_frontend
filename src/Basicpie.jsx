@@ -198,15 +198,16 @@ function BasicPie() {
     } else if (selectedState) {
         // Populate cities and include "AllCities" as an option
         cities = ['AllCities', ...Object.keys(Jsondata[selectedState])];
-
+    
         if (selectedCity === 'AllCities') {
-            // Populate allregions if "AllCities" is selected
+            // Populate all regions if "AllCities" is selected
             regions = ['AllRegions', ...Object.values(Jsondata[selectedState]).flat()];
         } else if (selectedCity) {
-            // Populate regions specific to the selected city
-            regions = Jsondata[selectedState][selectedCity];
+            // Safely populate regions specific to the selected city, and include "All Regions"
+            regions = ['AllRegions', ...(Jsondata[selectedState][selectedCity] || [])];
         }
     }
+    
 
     // Handle state change
     const handleStateChange = (event) => {
@@ -259,21 +260,20 @@ function BasicPie() {
                 </div>
 
                 <div className="filter-item">
-                    <label htmlFor="region">Region</label>
-                    <select
-                        id="region"
-                        value={selectedRegion}
-                        onChange={handleRegionChange}
-                        disabled={
-                            selectedState === 'AllStates' || selectedCity === 'AllCities'
-                        } // Disable based on conditions
-                    >
-                        <option value="">Select Region</option>
-                        {regions.map(region => (
-                            <option key={region} value={region}>{region}</option>
-                        ))}
-                    </select>
-                </div>
+    <label htmlFor="region">Region</label>
+    <select
+        id="region"
+        value={selectedRegion}
+        onChange={handleRegionChange}
+        disabled={selectedState === 'AllStates' || selectedCity === 'AllCities'} // Disable based on conditions
+    >
+        <option value="">Select Region</option>
+        {regions.map(region => (
+            <option key={region} value={region}>{region}</option>
+        ))}
+    </select>
+</div>
+
 
 
                 <div className="filter-item">
