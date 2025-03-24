@@ -125,7 +125,7 @@ function BasicPie() {
     useEffect(() => {
         const fetchStates = async () => {
             try {
-                const response = await fetch('http://127.0.0.1:8003/get_states/', {
+                const response = await fetch('http://183.82.98.147:11015/get_states/', {
                     method: 'GET',
                 });
                 const data = await response.json();
@@ -140,7 +140,7 @@ function BasicPie() {
     // Fetch cities dynamically based on the selected state
     const fetchCities = async (stateName) => {
         try {
-            const response = await fetch(`http://127.0.0.1:8003/get_cities/?state=${stateName}`, {
+            const response = await fetch(`http://183.82.98.147:11015/get_cities/?state=${stateName}`, {
                 method: 'GET',
             });
             const data = await response.json();
@@ -153,7 +153,7 @@ function BasicPie() {
     // Fetch regions dynamically based on the selected city
     const fetchRegions = async (cityName) => {
         try {
-            const response = await fetch(`http://127.0.0.1:8003/get_regions/?city=${cityName}`, {
+            const response = await fetch(`http://183.82.98.147:11015/get_regions/?city=${cityName}`, {
                 method: 'GET',
             });
             const data = await response.json();
@@ -235,7 +235,7 @@ function BasicPie() {
         });
 
         try {
-            const response = await fetch(`http://127.0.0.1:8003//get_pollutiondata/?${queryParams.toString()}`, {
+            const response = await fetch(`http://183.82.98.147:11015/get_pollutiondata/?${queryParams.toString()}`, {
                 method: 'GET',
             });
 
