@@ -1,9 +1,87 @@
 import React, { useState, useEffect } from 'react';
 import { PieChart } from '@mui/x-charts/PieChart'; // Correct import
 import './styles.css';
+import Spinner from "react-bootstrap/Spinner";
 import { toast } from "react-toastify";
+import { useTheme } from "@mui/material/styles";
 import "react-toastify/dist/ReactToastify.css";
+import Box from "@mui/material/Box";
+import Table from "@mui/material/Table";
+import TableHead from "@mui/material/TableHead";
+import TableBody from "@mui/material/TableBody";
+import TableCell from "@mui/material/TableCell";
+import TableContainer from "@mui/material/TableContainer";
+import TableFooter from "@mui/material/TableFooter";
+import TablePagination from "@mui/material/TablePagination";
+import TableRow from "@mui/material/TableRow";
+import Paper from "@mui/material/Paper";
+import IconButton from "@mui/material/IconButton";
+import FirstPageIcon from "@mui/icons-material/FirstPage";
+import KeyboardArrowLeft from "@mui/icons-material/KeyboardArrowLeft";
+import KeyboardArrowRight from "@mui/icons-material/KeyboardArrowRight";
+import LastPageIcon from "@mui/icons-material/LastPage";
 
+function TablePaginationActions(props) {
+    const theme = useTheme();
+    const { count, page, rowsPerPage, onPageChange } = props;
+
+    const handleFirstPageButtonClick = (event) => {
+        onPageChange(event, 0);
+    };
+
+    const handleBackButtonClick = (event) => {
+        onPageChange(event, page - 1);
+    };
+
+    const handleNextButtonClick = (event) => {
+        onPageChange(event, page + 1);
+    };
+
+    const handleLastPageButtonClick = (event) => {
+        onPageChange(event, Math.max(0, Math.ceil(count / rowsPerPage) - 1));
+    };
+
+    return (
+        <Box sx={{ flexShrink: 0, ml: 2.5 }}>
+            <IconButton
+                onClick={handleFirstPageButtonClick}
+                disabled={page === 0}
+                aria-label="first page"
+            >
+                {theme.direction === "rtl" ? <LastPageIcon /> : <FirstPageIcon />}
+            </IconButton>
+            <IconButton
+                onClick={handleBackButtonClick}
+                disabled={page === 0}
+                aria-label="previous page"
+            >
+                {theme.direction === "rtl" ? (
+                    <KeyboardArrowRight />
+                ) : (
+                    <KeyboardArrowLeft />
+                )}
+            </IconButton>
+            <IconButton
+                onClick={handleNextButtonClick}
+                disabled={page >= Math.ceil(count / rowsPerPage) - 1}
+                aria-label="next page"
+            >
+                {theme.direction === "rtl" ? (
+                    <KeyboardArrowLeft />
+                ) : (
+                    <KeyboardArrowRight />
+                )}
+            </IconButton>
+            <IconButton
+                onClick={handleLastPageButtonClick}
+                disabled={page >= Math.ceil(count / rowsPerPage) - 1}
+                aria-label="last page"
+            >
+                {theme.direction === "rtl" ? <FirstPageIcon /> : <LastPageIcon />}
+            </IconButton>
+        </Box>
+    );
+}
 function BasicPie() {
     //basic sample json data for the  states and cities and regions
     const Jsondata = {
@@ -30,8 +108,20 @@ function BasicPie() {
     const [timeValue, setTimeValue] = useState('');
     const [loading, setLoading] = useState(false);
     const [apiResponse, setApiResponse] = useState([]);
-
-
+    const [page, setPage] = useState(0);
+    const [rowsPerPage, setRowsPerPage] = useState(10);
+    
+    const handlePageChange = (event, newPage) => {
+        setPage(newPage);
+    };
+    
+    const handleRowsPerPageChange = (event) => {
+        setRowsPerPage(parseInt(event.target.value, 10));
+        setPage(0); // Reset to page 0 when rows per page changes
+    };
+    
+    const displayedData = apiResponse.slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage);
+    
     useEffect(() => {
         const fetchStates = async () => {
             try {
@@ -112,27 +202,27 @@ function BasicPie() {
             toast.warn("please select state")
             return;
 
-          }
-          if (selectedCity == '') {
+        }
+        if (selectedCity == '') {
             toast.warn("please select City")
             return;
 
-          }
-          if (selectedRegion == '') {
+        }
+        if (selectedRegion == '') {
             toast.warn("please select state")
             return;
 
-          }
-         if (timeUnit === '' && timeValue === '') {
+        }
+        if (timeUnit === '' && timeValue === '') {
             toast.warn('Please select a time unit (hour or day) or enter a valid time value');
-        return;
-    }
+            return;
+        }
 
-    // If time unit is selected, ensure time value is provided
-    if (timeUnit !== '' && timeValue === '') {
-        toast.warn(`Please enter a valid number for ${timeUnit === 'hour' ? 'hours' : 'days'}`);
-        return;
-    }
+        // If time unit is selected, ensure time value is provided
+        if (timeUnit !== '' && timeValue === '') {
+            toast.warn(`Please enter a valid number for ${timeUnit === 'hour' ? 'hours' : 'days'}`);
+            return;
+        }
         setShowTable(true);
         setLoading(true);
 
@@ -342,8 +432,8 @@ function BasicPie() {
 
                 <div className="filter-item">
                     <label>Duration</label>
-                    <div>
-                        <label>
+                    <div >
+                        <label style={{padding:'10%'}}>
                             <input
                                 type="radio"
                                 name="timeUnit"
@@ -383,7 +473,18 @@ function BasicPie() {
                 <button className="search-btn" onClick={handleSearch}>Search</button>
             </div>
 
-            {showTable && apiResponse.length > 0 && (
+
+            <div>
+    {loading === true ? (
+        <div className="text-center w-100 loader-overlay">
+            <div className="spinner">
+                <Spinner animation="border" variant="primary" />
+            </div>
+        </div>
+    ) : (
+        showTable && apiResponse.length > 0 && (
+            <>
+                {/* Pie charts container */}
                 <div className="pie-chart-container">
                     <div className="pie-chart-item">
                         <h3>Pollutants by Region</h3>
@@ -394,7 +495,6 @@ function BasicPie() {
                             label={({ dataEntry }) => `${dataEntry.label}: ${dataEntry.value.toFixed(2)}`}
                         />
                     </div>
-
                     <div className="pie-chart-item">
                         <h3>Pollutants in Andhra Pradesh</h3>
                         <PieChart
@@ -404,7 +504,6 @@ function BasicPie() {
                             label={({ dataEntry }) => `${dataEntry.label}: ${dataEntry.value.toFixed(2)}`}
                         />
                     </div>
-
                     <div className="pie-chart-item">
                         <h3>Pollutants in Telangana</h3>
                         <PieChart
@@ -415,47 +514,70 @@ function BasicPie() {
                         />
                     </div>
                 </div>
-            )}
 
-
-            {showTable && apiResponse.length > 0 && (
-                <div className='overflows'>
-                    <table style={{ width: "100%" }} className="table employee-table">
-                        <thead>
-                            <tr>
-                                {/* <th>State</th>
-                                <th>City</th>
-                                <th>Region</th> */}
-                                <th>count_co2</th>
-                                <th>avg_co2</th>
-                                <th>sum_co2</th>
-                                <th>aggr_param</th>
-                                <th>aggr_value</th>
-                                <th>Start Date</th>
-                                <th>End Date</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {apiResponse.map((apidata, index) => (
-                                <tr key={index}>
-                                    {/* <td>{selectedState}</td>
-                                    <td>{selectedCity}</td>
-                                    <td>{selectedRegion}</td> */}
-                                    <td>{apidata.count_pollutants_co2}</td>
-                                    <td>{apidata.avg_pollutants_co2.toFixed(2)}</td>
-                                    <td>{apidata.sum_pollutants_co2}</td>
-                                    <td>{apidata.aggr_param}</td>
-                                    <td>{apidata.aggr_value}</td>
-                                    <td>{apidata.start}</td>
-                                    <td>{apidata.end}</td>
-                                </tr>
-                            ))}
-                        </tbody>
-                    </table>
+                {/* Table Container */}
+                <div className="overflows">
+                    <TableContainer component={Paper} elevation={4}>
+                        <Table aria-label="simple table" className="table employee-table">
+                            <TableHead >
+                                <TableRow >
+                                    <TableCell width="10%" style={{ fontWeight: 'bold' }}>Count CO2</TableCell>
+                                    <TableCell width="10%" style={{ fontWeight: 'bold' }}>Avg CO2</TableCell>
+                                    <TableCell width="10%" style={{ fontWeight: 'bold' }}>Sum CO2</TableCell>
+                                    <TableCell width="10%" style={{ fontWeight: 'bold' }}>Aggr Param</TableCell>
+                                    <TableCell width="20%" style={{ fontWeight: 'bold' }}>Aggr Value</TableCell>
+                                    <TableCell width="20%" style={{ fontWeight: 'bold' }}>Start Date</TableCell>
+                                    <TableCell width="20%" style={{ fontWeight: 'bold' }}>End Date</TableCell>
+                                </TableRow>
+                            </TableHead>
+                            <TableBody>
+                                {displayedData.length === 0 ? (
+                                    <TableRow>
+                                        <TableCell colSpan="7">
+                                            <div className="nodata-found-con">
+                                                <div className="nodata text-center w-100">
+                                                    No Records Found
+                                                </div>
+                                            </div>
+                                        </TableCell>
+                                    </TableRow>
+                                ) : (
+                                    displayedData.map((apidata, index) => (
+                                        <TableRow key={`row-${index}`}>
+                                            <TableCell>{apidata.count_pollutants_co2}</TableCell>
+                                            <TableCell>{apidata.avg_pollutants_co2.toFixed(2)}</TableCell>
+                                            <TableCell>{apidata.sum_pollutants_co2}</TableCell>
+                                            <TableCell>{apidata.aggr_param}</TableCell>
+                                            <TableCell>{apidata.aggr_value}</TableCell>
+                                            <TableCell>{apidata.start}</TableCell>
+                                            <TableCell>{apidata.end}</TableCell>
+                                        </TableRow>
+                                    ))
+                                )}
+                            </TableBody>
+                            <TableFooter>
+                                <TableRow>
+                                    <TablePagination
+                                        rowsPerPageOptions={[10, 20, 30, { label: "All", value: -1 }]}
+                                        count={apiResponse.length} // Total data length for pagination
+                                        rowsPerPage={rowsPerPage}
+                                        page={page}
+                                        onPageChange={handlePageChange}
+                                        onRowsPerPageChange={handleRowsPerPageChange}
+                                        ActionsComponent={TablePaginationActions}
+                                    />
+                                </TableRow>
+                            </TableFooter>
+                        </Table>
+                    </TableContainer>
                 </div>
-            )}
+            </>
+        )
+    )}
+</div>
 
-            {/* Render PieChart */}
+
+          
 
         </div>
     );
