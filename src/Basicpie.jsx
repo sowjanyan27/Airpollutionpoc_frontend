@@ -1,22 +1,25 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { PieChart } from '@mui/x-charts/PieChart'; // Correct import
 import './styles.css';
 
 function BasicPie() {
     //basic sample json data for the  states and cities and regions
     const Jsondata = {
-     
+
 
         Telangana: {
-            Hyderabad: ["", "SR Nagar", "Ameerpet", "Rajeev Nagar", "Hafeezpet",'Rajeev Nagr','gachibowli'],
+            Hyderabad: ["", "SR Nagar", "Ameerpet", "Rajeev Nagar", "Hafeezpet", 'Rajeev Nagr', 'gachibowli'],
             MahaboobNagar: ["Mahaboobnagar", "Addakal", "Balanagar"]
         },
         AndhraPradesh: {
             Vizag: ["Dondaparthy", "Maddilapalem", "Gajuwaka", "Vizag"],
-            Guntur: ["Guntur", "Tenali", "Bapatla",'besant road']
+            Guntur: ["Guntur", "Tenali", "Bapatla", 'besant road']
         }
     };
 
+    const [states, setStates] = useState([]);
+    const [cities, setCities] = useState([]);
+    const [regions, setRegions] = useState([]);
     const [selectedState, setSelectedState] = useState('');
     const [selectedCity, setSelectedCity] = useState('');
     const [selectedRegion, setSelectedRegion] = useState('');
@@ -27,9 +30,81 @@ function BasicPie() {
     const [apiResponse, setApiResponse] = useState([]);
 
 
-    // get data when click on search button
-    
-    
+    useEffect(() => {
+        const fetchStates = async () => {
+            try {
+                const response = await fetch('http://127.0.0.1:8003/get_states/', {
+                    method: 'GET',
+                });
+                const data = await response.json();
+                setStates([{ state_name: 'AllStates' }, ...data]); // Add "AllStates" as the default
+            } catch (error) {
+                console.error('Error fetching states:', error);
+            }
+        };
+        fetchStates();
+    }, []);
+
+    // Fetch cities dynamically based on the selected state
+    const fetchCities = async (stateName) => {
+        try {
+            const response = await fetch(`http://127.0.0.1:8003/get_cities/?state=${stateName}`, {
+                method: 'GET',
+            });
+            const data = await response.json();
+            setCities([{ city_name: 'AllCities' }, ...data]); // Add "AllCities" as the default
+        } catch (error) {
+            console.error('Error fetching cities:', error);
+        }
+    };
+
+    // Fetch regions dynamically based on the selected city
+    const fetchRegions = async (cityName) => {
+        try {
+            const response = await fetch(`http://127.0.0.1:8003/get_regions/?city=${cityName}`, {
+                method: 'GET',
+            });
+            const data = await response.json();
+            setRegions([{ region_name: 'AllRegions' }, ...data]); // Add "AllRegions" as the default
+        } catch (error) {
+            console.error('Error fetching regions:', error);
+        }
+    };
+
+    // Handle state change
+    const handleStateChange = async (event) => {
+        const stateName = event.target.value;
+        setSelectedState(stateName);
+        setSelectedCity('AllCities'); // Reset city dropdown to default
+        setSelectedRegion('AllRegions'); // Reset region dropdown to default
+
+        if (stateName === 'AllStates') {
+            setCities([{ city_name: 'AllCities' }]); // Default to "AllCities"
+            setRegions([{ region_name: 'AllRegions' }]); // Default to "AllRegions"
+        } else {
+            await fetchCities(stateName); // Fetch cities for the selected state
+            setRegions([{ region_name: 'AllRegions' }]); // Default to "AllRegions"
+        }
+    };
+
+    // Handle city change
+    const handleCityChange = async (event) => {
+        const cityName = event.target.value;
+        setSelectedCity(cityName);
+        setSelectedRegion('AllRegions'); // Reset region dropdown to default
+
+        if (cityName === 'AllCities') {
+            setRegions([{ region_name: 'AllRegions' }]); // Default to "AllRegions"
+        } else {
+            await fetchRegions(cityName); // Fetch regions for the selected city
+        }
+    };
+
+    // Handle region change
+    const handleRegionChange = (event) => {
+        setSelectedRegion(event.target.value); // Update selected region
+    };
+
     const handleSearch = async () => {
         if (selectedState == '') {
             alert("please select state")
@@ -43,6 +118,16 @@ function BasicPie() {
             alert("please select region")
             return;
         }
+         if (timeUnit === '' && timeValue === '') {
+        alert('Please select a time unit (hour or day) or enter a valid time value');
+        return;
+    }
+
+    // If time unit is selected, ensure time value is provided
+    if (timeUnit !== '' && timeValue === '') {
+        alert(`Please enter a valid number for ${timeUnit === 'hour' ? 'hours' : 'days'}`);
+        return;
+    }
         setShowTable(true);
         setLoading(true);
 
@@ -55,7 +140,7 @@ function BasicPie() {
         });
 
         try {
-            const response = await fetch(`http://183.82.98.147:11015/get_pollutiondata/?${queryParams.toString()}`, {
+            const response = await fetch(`http://127.0.0.1:8003//get_pollutiondata/?${queryParams.toString()}`, {
                 method: 'GET',
             });
 
@@ -187,45 +272,8 @@ function BasicPie() {
     ];
 
 
-    const states = ['AllStates', ...Object.keys(Jsondata)];
-    let cities = [];
-    let regions = [];
 
-    if (selectedState === 'AllStates') {
-        // Default to "AllCities" and "AllRegions"
-        cities = ['AllCities'];
-        regions = ['AllRegions'];
-    } else if (selectedState) {
-        // Populate cities and include "AllCities" as an option
-        cities = ['AllCities', ...Object.keys(Jsondata[selectedState])];
-    
-        if (selectedCity === 'AllCities') {
-            // Populate all regions if "AllCities" is selected
-            regions = ['AllRegions', ...Object.values(Jsondata[selectedState]).flat()];
-        } else if (selectedCity) {
-            // Safely populate regions specific to the selected city, and include "All Regions"
-            regions = ['AllRegions', ...(Jsondata[selectedState][selectedCity] || [])];
-        }
-    }
-    
 
-    // Handle state change
-    const handleStateChange = (event) => {
-        setSelectedState(event.target.value);
-        setSelectedCity('AllCities'); // Default to "AllCities"
-        setSelectedRegion('AllRegions'); // Default to "AllRegions"
-    };
-
-    // Handle city change
-    const handleCityChange = (event) => {
-        setSelectedCity(event.target.value);
-        setSelectedRegion('AllRegions'); // Default to "AllRegions"
-    };
-
-    // Handle region change
-    const handleRegionChange = (event) => {
-        setSelectedRegion(event.target.value);
-    };
 
 
 
@@ -234,45 +282,56 @@ function BasicPie() {
             <h2 className="heading">Air Pollution Poc</h2>
 
             <div className="filters">
+
                 <div className="filter-item">
                     <label htmlFor="state">State</label>
                     <select id="state" value={selectedState} onChange={handleStateChange}>
                         <option value="">Select State</option>
                         {states.map(state => (
-                            <option key={state} value={state}>{state}</option>
+                            <option key={state.state_name} value={state.state_name}>
+                                {state.state_name}
+                            </option>
                         ))}
                     </select>
                 </div>
 
+                {/* City Dropdown */}
                 <div className="filter-item">
                     <label htmlFor="city">City</label>
                     <select
                         id="city"
                         value={selectedCity}
                         onChange={handleCityChange}
-                        disabled={selectedState === 'AllStates'} // Disable when "AllStates" is selected
+                        disabled={selectedState === 'AllStates'} // Disable if "AllStates" is selected
                     >
                         <option value="">Select City</option>
                         {cities.map(city => (
-                            <option key={city} value={city}>{city}</option>
+                            <option key={city.city_name} value={city.city_name}>
+                                {city.city_name}
+                            </option>
                         ))}
                     </select>
                 </div>
 
+                {/* Region Dropdown */}
                 <div className="filter-item">
-    <label htmlFor="region">Region</label>
-    <select
-        id="region"
-        value={selectedRegion}
-        onChange={handleRegionChange}
-        disabled={selectedState === 'AllStates' || selectedCity === 'AllCities'} // Disable based on conditions
-    >
-        <option value="">Select Region</option>
-        {regions.map(region => (
-            <option key={region} value={region}>{region}</option>
-        ))}
-    </select>
-</div>
+                    <label htmlFor="region">Region</label>
+                    <select
+                        id="region"
+                        value={selectedRegion}
+                        onChange={handleRegionChange}
+                        disabled={
+                            selectedState === 'AllStates' || selectedCity === 'AllCities'
+                        } // Disable if "AllStates" or "AllCities" is selected
+                    >
+                        <option value="">Select Region</option>
+                        {regions.map(region => (
+                            <option key={region.region_name} value={region.region_name}>
+                                {region.region_name}
+                            </option>
+                        ))}
+                    </select>
+                </div>
 
 
 
@@ -312,6 +371,9 @@ function BasicPie() {
                         placeholder={`Enter ${timeUnit === 'hour' ? '1-24 hours' : '1 or more days'}`}
                     />
                 </div>
+                {/* {loading && (
+                <div className="loader"></div>
+            )} */}
 
                 <button className="search-btn" onClick={handleSearch}>Search</button>
             </div>
