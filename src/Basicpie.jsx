@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { PieChart } from '@mui/x-charts/PieChart'; // Correct import
 import './styles.css';
+import { toast } from "react-toastify";
+import "react-toastify/dist/ReactToastify.css";
 
 function BasicPie() {
     //basic sample json data for the  states and cities and regions
@@ -107,25 +109,28 @@ function BasicPie() {
 
     const handleSearch = async () => {
         if (selectedState == '') {
-            alert("please select state")
+            toast.warn("please select state")
             return;
-        }
-        if (selectedCity == '') {
-            alert("please select city")
+
+          }
+          if (selectedCity == '') {
+            toast.warn("please select City")
             return;
-        }
-        if (selectedRegion == '') {
-            alert("please select region")
+
+          }
+          if (selectedRegion == '') {
+            toast.warn("please select state")
             return;
-        }
+
+          }
          if (timeUnit === '' && timeValue === '') {
-        alert('Please select a time unit (hour or day) or enter a valid time value');
+            toast.warn('Please select a time unit (hour or day) or enter a valid time value');
         return;
     }
 
     // If time unit is selected, ensure time value is provided
     if (timeUnit !== '' && timeValue === '') {
-        alert(`Please enter a valid number for ${timeUnit === 'hour' ? 'hours' : 'days'}`);
+        toast.warn(`Please enter a valid number for ${timeUnit === 'hour' ? 'hours' : 'days'}`);
         return;
     }
         setShowTable(true);
